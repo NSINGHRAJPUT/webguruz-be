@@ -28,6 +28,11 @@ exports.login = async (req, res) => {
     console.log('Login failed - Invalid credentials');
     return res.status(401).json({ message: 'Invalid credentials' });
   }
+
+  if (user.status === 'inactive') {
+    console.log('Login failed - Account inactive');
+    return res.status(403).json({ message: 'Account is inactive' });
+  }
   
   // Convert user document to object and remove password
   const userObject = user.toObject();
