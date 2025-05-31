@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Socket.IO Test</title>
+  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+</head>
+<body>
+  <h1>Socket.IO Connection Test</h1>
+  <div>
+    <button id="connect">Connect</button>
+    <button id="authenticate">Authenticate</button>
+    <button id="test">Send Test</button>
+    <button id="disconnect">Disconnect</button>
+  </div>
+  <div>
+    <h3>Status:</h3>
+    <pre id="status">Disconnected</pre>
+  </div>
+  <div>
+    <h3>Events:</h3>
+    <pre id="events"></pre>
+  </div>
+
+  <script>
+    // DOM elements
+    const statusEl = document.getElementById('status');
+    const eventsEl = document.getElementById('events');
+    
+    // Log function
+    function log(event, data) {
+      const time = new Date().toLocaleTimeString();
+      eventsEl.textContent += `[${time}] ${event}: ${JSON.stringify(data)}\n`;
+      eventsEl.scrollTop = eventsEl.scrollHeight;
+    }
+    
+    // Socket instance
+    let socket;
+    
+    // Connect button
+    document.getElementById('connect').addEventListener('click', () => {
+      if (socket && socket.connected) {
+        log('Warning', 'Already connected');
+        return;
+      }
+      
+      // Connect to the Socket.IO server
+      socket = io('http://localhost:5000', {
+        transports: ['websocket', 'polling'],
+        reconnection: true
+      });
+      
+      // Connection events
+      socket.on('connect', () => {
+        statusEl.textContent = `Connected: ${socket.id}`;
+        log('connect', { id: socket.id });
+      });
+      
+      socket.on('disconnect', (reason) => {
+        statusEl.textContent = `Disconnected: ${reason}`;
+        log('disconnect', { reason });
+      });
+      
+      socket.on('connect_error', (error) => {
+        statusEl.textContent = `Error: ${error.message}`;
+        log('connect_error', { message: error.message });
+      });
+      
+      // Custom events
+      socket.on('authenticated', (data) => {
+        log('authenticated', data);
+      });
+      
+      socket.on('test-response', (data) => {
+        log('test-response', data);
+      });
+      
+      socket.on('force-logout', (data) => {
+        log('force-logout', data);
+      });
+    });
+    
+    // Authenticate button
+    document.getElementById('authenticate').addEventListener('click', () => {
+      if (!socket || !socket.connected) {
+        log('Error', 'Not connected');
+        return;
+      }
+      
+      const userId = prompt('Enter user ID:');
+      if (userId) {
+        socket.emit('authenticate', userId);
+        log('authenticate', { userId });
+      }
+    });
+    
+    // Test button
+    document.getElementById('test').addEventListener('click', () => {
+      if (!socket || !socket.connected) {
+        log('Error', 'Not connected');
+        return;
+      }
+      
+      socket.emit('test', { message: 'Hello from test page' });
+      log('test', { message: 'Hello from test page' });
+    });
+    
+    // Disconnect button
+    document.getElementById('disconnect').addEventListener('click', () => {
+      if (!socket || !socket.connected) {
+        log('Error', 'Not connected');
+        return;
+      }
+      
+      socket.disconnect();
+    });
+  </script>
+</body>
+</html>
