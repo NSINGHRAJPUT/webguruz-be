@@ -1,9 +1,21 @@
 const Task = require('../models/Task');
 
-exports.getTasks = async (req, res) => { 
-  const tasks = await Task.find();
-  const count = await Task.countDocuments(); 
-  res.json({ tasks, count });
+exports.getTasks = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = (page - 1) * limit;
+
+    const [tasks, count] = await Promise.all([
+      Task.find().skip(skip).limit(limit),
+      Task.countDocuments()
+    ]);
+
+    res.json({ tasks, count });
+  } catch (err) {
+    console.error('Error fetching paginated tasks:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 };
 
 exports.bulkUpdateTasks = async (req, res) => {
